@@ -11,28 +11,27 @@ inline uint8_t update_flags(const uint8_t result, const uint8_t A,
 {
     if(HAS_FLAG_SET(mask, ZERO_FLAG)) {
         flags = result == 0 ? SET_FLAG(flags, ZERO_FLAG)
-                             : CLEAR_FLAG(flags, ZERO_FLAG);
-
+                            : CLEAR_FLAG(flags, ZERO_FLAG);
     }
 
     if(HAS_FLAG_SET(mask, SIGN_FLAG)) {
         flags = (result >> 7) == 1 ? SET_FLAG(flags, SIGN_FLAG)
-                                      : CLEAR_FLAG(flags, SIGN_FLAG);
+                                   : CLEAR_FLAG(flags, SIGN_FLAG);
     }
 
     if(HAS_FLAG_SET(mask, PARITY_FLAG)) {
         flags = (result % 2) == 0 ? SET_FLAG(flags, PARITY_FLAG)
-                                     : CLEAR_FLAG(flags, PARITY_FLAG);
+                                  : CLEAR_FLAG(flags, PARITY_FLAG);
     }
 
     if(HAS_FLAG_SET(mask, CARRY_FLAG) && addition) {
-        flags = ((A + B) > 255) ? SET_FLAG(flags, CARRY_FLAG)
-                                   : CLEAR_FLAG(flags, CARRY_FLAG);
+        flags = (((uint16_t)A + B) > 255) ? SET_FLAG(flags, CARRY_FLAG)
+                                          : CLEAR_FLAG(flags, CARRY_FLAG);
     }
 
     if(HAS_FLAG_SET(mask, CARRY_FLAG) && (!addition)) {
         flags = (A < B) ? SET_FLAG(flags, CARRY_FLAG)
-                           : CLEAR_FLAG(flags, CARRY_FLAG);
+                        : CLEAR_FLAG(flags, CARRY_FLAG);
     }
 
     if(HAS_FLAG_SET(mask, AUXILIARY_CARRY_FLAG) && addition) {
@@ -119,7 +118,7 @@ inline uint8_t ADD_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags
     return 7;
 }
 
-inline uint8_t ADD_imm(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+inline uint8_t ADI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     uint8_t A = registers[REG_A];
     uint8_t B = imm;
@@ -148,10 +147,88 @@ inline uint8_t ADC_mem(uint8_t* registers, const uint8_t* memory,
     (*flags) = update_flags(registers[REG_A], 0, 0, true, *flags,
                             ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
 
-    (*flags) = ((A + B + carry) > 255) ? SET_FLAG(*flags, CARRY_FLAG)
-                                    : CLEAR_FLAG(*flags, CARRY_FLAG);
+    (*flags) = (((uint16_t)A + B + carry) > 255)
+                   ? SET_FLAG(*flags, CARRY_FLAG)
+                   : CLEAR_FLAG(*flags, CARRY_FLAG);
 
     (*flags) = (((A & 0x0F) + (B & 0x0F) + 1) > 15)
+                       ? SET_FLAG(*flags, AUXILIARY_CARRY_FLAG)
+                       : CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
+
+    return 7;
+}
+
+inline uint8_t ACI(uint8_t* registers, uint8_t imm, uint8_t* flags)
+{
+    uint8_t carry = HAS_FLAG_SET(*flags, CARRY_FLAG) ? 1 : 0;
+    uint8_t A = registers[REG_A];
+    uint8_t B = imm;
+
+    registers[REG_A] = A + B + carry;
+
+    // Manually set the C and AC flags since we have 3 terms in the addition
+    (*flags) = update_flags(registers[REG_A], 0, 0, true, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+
+    (*flags) = (((uint16_t)A + B + carry) > 255)
+                   ? SET_FLAG(*flags, CARRY_FLAG)
+                   : CLEAR_FLAG(*flags, CARRY_FLAG);
+
+    (*flags) = (((A & 0x0F) + (B & 0x0F) + 1) > 15)
+                       ? SET_FLAG(*flags, AUXILIARY_CARRY_FLAG)
+                       : CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
+
+    return 7;
+}
+
+inline uint8_t SUB_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags)
+{
+    uint8_t h = registers[REG_H];
+    uint8_t l = registers[REG_L];
+
+    uint8_t A = registers[REG_A];
+    uint8_t B = memory[ADDRESS(h, l)];
+
+    registers[REG_A] = A - B;
+
+    (*flags) = update_flags(registers[REG_A], A, B, false, *flags, ALL_FLAGS);
+
+    return 7;
+}
+
+inline uint8_t SUI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+{
+    uint8_t A = registers[REG_A];
+    uint8_t B = imm;
+
+    registers[REG_A] = A - B;
+
+    (*flags) = update_flags(registers[REG_A], A, B, false, *flags, ALL_FLAGS);
+
+    return 7;
+}
+
+inline uint8_t SBB_mem(uint8_t* registers, const uint8_t* memory,
+                   uint8_t* flags)
+{
+    uint8_t h = registers[REG_H];
+    uint8_t l = registers[REG_L];
+    uint8_t carry = HAS_FLAG_SET(*flags, CARRY_FLAG) ? 1 : 0;
+    uint8_t address = ADDRESS(h, l);
+
+    uint8_t A = registers[REG_A];
+    uint8_t B = memory[address];
+
+    registers[REG_A] = A - B - carry;
+
+    // Manually set the C and AC flags since we have 3 terms in the addition
+    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+
+    (*flags) = (A < ((uint16_t)B + carry)) ? SET_FLAG(*flags, CARRY_FLAG)
+                                    : CLEAR_FLAG(*flags, CARRY_FLAG);
+
+    (*flags) = ( (A & 0x0F) < ((B & 0x0F) + 1) )
                        ? SET_FLAG(*flags, AUXILIARY_CARRY_FLAG)
                        : CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
 
@@ -179,5 +256,4 @@ inline uint8_t ACI(uint8_t* registers, uint8_t imm, uint8_t* flags)
 
     return 7;
 }
-
 #endif

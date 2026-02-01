@@ -71,7 +71,7 @@ void cpu_step()
             PC += 1;
             break;
         case 0b11000110: // Add immediate
-            busy_cycles = ADD_imm(registers, memory[PC + 1], &flags);
+            busy_cycles = ADI(registers, memory[PC + 1], &flags);
             PC += 2;
             break;
         case 0b10001110: // Add memory with carry
@@ -80,6 +80,14 @@ void cpu_step()
             break;
         case 0b11001110: // Add immediate with carry
             busy_cycles = ACI(registers, memory[PC + 1], &flags);
+            PC += 2;
+            break;
+        case 0b10010110: // Subtract memory
+            busy_cycles = SUB_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b11010110:  // Subtract immediate
+            busy_cycles = SUI(registers, memory[PC + 1], &flags);
             PC += 2;
             break;
         default:
