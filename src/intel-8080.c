@@ -90,6 +90,51 @@ void cpu_step()
             busy_cycles = SUI(registers, memory[PC + 1], &flags);
             PC += 2;
             break;
+        case 0b10011110: // Subtract memory with borrow
+            busy_cycles = SBB_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b11011110: //  Subtract immediate with borrow
+            busy_cycles = SBI(registers, memory[PC + 1], &flags);
+            PC += 2;
+            break;
+        case 0b00110100: // Increment memory
+            busy_cycles = INR_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b00110101: // Decrement memory
+            busy_cycles = DCR_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b00100111: // Decimal Adjust Accumulator
+            busy_cycles = DDA(registers, &flags);
+            PC += 1;
+            break;
+        case 0b10100110: // AND memory
+            busy_cycles = ANA_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b11100110: // AND immediate
+            busy_cycles = ANI(registers, memory[PC + 1], &flags);
+            PC += 2;
+            break;
+        case 0b10101110: // XOR memory
+            busy_cycles = XRA_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b11101110: // XOR immediate
+            busy_cycles = XRI(registers, memory[PC + 1], &flags);
+            PC += 2;
+            break;
+        case 0b10110110: // OR memory
+            busy_cycles = ORA_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b11110110: // OR immediate
+            busy_cycles = ORI(registers, memory[PC + 1], &flags);
+            PC += 2;
+            break;
+        case 0b10111110: // Compare memory
         default:
             // TODO: Handle unknown instruction
             break;
