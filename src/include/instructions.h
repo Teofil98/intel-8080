@@ -9,12 +9,12 @@ inline uint8_t get_mem_HL(const uint8_t* registers, const uint8_t* memory)
 {
     const uint8_t h = registers[REG_H];
     const uint8_t l = registers[REG_L];
-    const address = ADDRESS(h, l);
-    return memory[address]
+    const uint8_t address = ADDRESS(h, l);
+    return memory[address];
 }
 
 inline uint8_t update_flags(const uint8_t result, const uint8_t A,
-                            const uint8_t B,const bool addition,
+                            const uint8_t B, const bool addition,
                             uint8_t flags, const uint8_t mask)
 {
     if(HAS_FLAG_SET(mask, ZERO_FLAG)) {
@@ -60,8 +60,10 @@ inline uint8_t update_flags(const uint8_t result, const uint8_t A,
 // NOTE: Instructions return the number of cycles they take
 
 inline uint8_t MVI_mem(const uint8_t* registers, uint8_t* memory,
-                      const uint8_t imm)
+                       const uint8_t imm)
 {
+    // TODO: Replace explicit calls with the get_mem_HL function (multiple
+    // places in code)
     uint16_t address = ADDRESS(registers[REG_H], registers[REG_L]);
     memory[address] = imm;
     return 10;
@@ -344,13 +346,15 @@ inline uint8_t DDA(uint8_t* registers, uint8_t* flags)
 
 inline uint8_t ANA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
 {
-    int A = registers[REG_A];
-    int B = get_mem_HL(registers, memory);
+    const uint8_t A = registers[REG_A];
+    const uint8_t B = get_mem_HL(registers, memory);
     registers[REG_A] = A & B;
 
-    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags, ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
 
-    // NOTE: From 8080/8085 manual: The CY flag is cleared and AC is set to the OR’ing of bits 3 of the operands (8080).
+    // NOTE: From 8080/8085 manual: The CY flag is cleared and AC is set to the
+    // OR’ing of bits 3 of the operands (8080).
     (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
     uint8_t ac_flag = ((A & 0x08) | (B & 0x08));
     if(ac_flag > 0) {
@@ -366,21 +370,22 @@ inline uint8_t ANI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     registers[REG_A] = registers[REG_A] & imm;
 
-    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags, ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
 
     return 7;
 }
 
-
 inline uint8_t XRA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
 {
-    int A = registers[REG_A];
-    int B = get_mem_HL(registers, memory);
+    const uint8_t A = registers[REG_A];
+    const uint8_t B = get_mem_HL(registers, memory);
     registers[REG_A] = A ^ B;
 
-    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags, ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
 
     (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
@@ -392,21 +397,22 @@ inline uint8_t XRI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     registers[REG_A] = registers[REG_A] ^ imm;
 
-    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags, ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
 
     return 7;
 }
 
-
 inline uint8_t ORA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
 {
-    int A = registers[REG_A];
-    int B = get_mem_HL(registers, memory);
+    const uint8_t A = registers[REG_A];
+    const uint8_t B = get_mem_HL(registers, memory);
     registers[REG_A] = A | B;
 
-    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags, ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
 
     (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
@@ -418,11 +424,130 @@ inline uint8_t ORI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     registers[REG_A] = registers[REG_A] | imm;
 
-    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags, ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
+    (*flags) = update_flags(registers[REG_A], 0, 0, false, *flags,
+                            ZERO_FLAG | SIGN_FLAG | PARITY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
     (*flags) = CLEAR_FLAG(*flags, AUXILIARY_CARRY_FLAG);
 
     return 7;
+}
+
+inline uint8_t CMP_mem(const uint8_t* registers, const uint8_t* memory,
+                       uint8_t* flags)
+{
+    const uint8_t A = registers[REG_A];
+    const uint8_t B = get_mem_HL(registers, memory);
+    const uint8_t res = A - B;
+    (*flags) = update_flags(res, A, B, FLAG_OPERATION_SUBTRACTION, *flags,
+                            ALL_FLAGS);
+
+    return 7;
+}
+
+inline uint8_t CPI(const uint8_t* registers, const uint8_t imm, uint8_t* flags)
+{
+    const uint8_t A = registers[REG_A];
+    const uint8_t B = imm;
+    const uint8_t res = A - B;
+    (*flags) = update_flags(res, A, B, FLAG_OPERATION_SUBTRACTION, *flags,
+                            ALL_FLAGS);
+
+    return 7;
+}
+
+inline uint8_t RLC(uint8_t* registers, uint8_t* flags)
+{
+    uint8_t msb = ((registers[REG_A] & 0x80) >> 7);
+    registers[REG_A] <<= 1;
+    if(msb == 0) {
+        // TODO: Maybe this should also set the flag, not just return the new
+        // value
+        (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
+    } else {
+        registers[REG_A] |= 0x01;
+        (*flags) = SET_FLAG(*flags, CARRY_FLAG);
+    }
+
+    return 4;
+}
+
+inline uint8_t RRC(uint8_t* registers, uint8_t* flags)
+{
+    uint8_t lsb = (registers[REG_A] & 0x01);
+    registers[REG_A] >>= 1;
+    if(lsb == 0) {
+        (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
+    } else {
+        registers[REG_A] |= 0x80;
+        (*flags) = SET_FLAG(*flags, CARRY_FLAG);
+    }
+
+    return 4;
+}
+
+inline uint8_t RAL(uint8_t* registers, uint8_t* flags)
+{
+    uint8_t msb = ((registers[REG_A] & 0x80) >> 7);
+    registers[REG_A] <<= 1;
+
+
+    if(HAS_FLAG_SET(*flags, CARRY_FLAG)) {
+        registers[REG_A] |= 0x01;
+    }
+
+    if(msb == 0) {
+        // TODO: Maybe this should also set the flag, not just return the new
+        // value
+        (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
+    } else {
+        (*flags) = SET_FLAG(*flags, CARRY_FLAG);
+    }
+
+    return 4;
+}
+
+
+inline uint8_t RAR(uint8_t* registers, uint8_t* flags)
+{
+    uint8_t lsb = (registers[REG_A] & 0x01);
+    registers[REG_A] >>= 1;
+
+    if(HAS_FLAG_SET(*flags, CARRY_FLAG)) {
+        registers[REG_A] |= 0x80;
+    }
+
+    if(lsb == 0) {
+        (*flags) = CLEAR_FLAG(*flags, CARRY_FLAG);
+    } else {
+        (*flags) = SET_FLAG(*flags, CARRY_FLAG);
+    }
+
+    return 4;
+}
+
+inline uint8_t CMA(uint8_t* registers)
+{
+    registers[REG_A] = (~registers[REG_A]);
+    return 4;
+}
+
+
+inline uint8_t CMC(uint8_t* flags)
+{
+    (*flags) ^= CARRY_FLAG;
+    return 4;
+}
+
+inline uint8_t STC(uint8_t* flags)
+{
+    (*flags) = SET_FLAG(*flags, CARRY_FLAG);
+    return 4;
+}
+
+inline uint8_t JMP(const uint8_t addr_low, const uint8_t addr_high, uint16_t* PC)
+{
+    (*PC) = ADDRESS(addr_high, addr_low);
+    return 10;
 }
 
 #endif // INSTRUCTIONS_H

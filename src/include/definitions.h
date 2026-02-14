@@ -21,5 +21,7 @@
 #define REG_L 0b101
 
 #define ADDRESS(h, l) (((h) << 8) | (l))
+#define FLAG_OPERATION_ADDITION true
+#define FLAG_OPERATION_SUBTRACTION false
 
 #endif

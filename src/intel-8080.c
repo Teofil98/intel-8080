@@ -135,6 +135,44 @@ void cpu_step()
             PC += 2;
             break;
         case 0b10111110: // Compare memory
+            busy_cycles = CMP_mem(registers, memory, &flags);
+            PC += 1;
+            break;
+        case 0b11111110: // Compare memory immediate
+            busy_cycles = CPI(registers, memory[PC + 1], &flags);
+            PC += 2;
+            break;
+        case 0b00000111: // Rotate left
+            busy_cycles = RLC(registers, &flags);
+            PC += 1;
+            break;
+        case 0b00001111: // Rotate right
+            busy_cycles = RRC(registers, &flags);
+            PC += 1;
+            break;
+        case 0b00010111: // Rotate left through carry
+            busy_cycles = RAL(registers, &flags);
+            PC += 1;
+            break;
+        case 0b00011111: // Rotate right through carry
+            busy_cycles = RAR(registers, &flags);
+            PC += 1;
+            break;
+        case 0b00101111: // Complement accumulator
+            busy_cycles = CMA(registers);
+            PC += 1;
+            break;
+        case 0b00111111: // Complement carry
+            busy_cycles = CMC(&flags);
+            PC += 1;
+            break;
+        case 0b00110111: // Set carry
+            busy_cycles = STC(&flags);
+            PC += 1;
+            break;
+        case 0b11000011: // Jump
+            busy_cycles = JMP(memory[PC + 1], memory[PC + 2], &PC);
+            break;
         default:
             // TODO: Handle unknown instruction
             break;
