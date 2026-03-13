@@ -146,7 +146,7 @@ inline uint8_t ADC_mem(uint8_t* registers, const uint8_t* memory,
     uint8_t h = registers[REG_H];
     uint8_t l = registers[REG_L];
     uint8_t carry = GET_FLAG(*flags, CARRY_FLAG);
-    uint8_t address = ADDRESS(h, l);
+    uint16_t address = ADDRESS(h, l);
 
     uint8_t A = registers[REG_A];
     uint8_t B = memory[address];
@@ -224,7 +224,7 @@ inline uint8_t SBB_mem(uint8_t* registers, const uint8_t* memory,
     uint8_t h = registers[REG_H];
     uint8_t l = registers[REG_L];
     uint8_t carry = GET_FLAG(*flags, CARRY_FLAG);
-    uint8_t address = ADDRESS(h, l);
+    uint16_t address = ADDRESS(h, l);
 
     uint8_t A = registers[REG_A];
     uint8_t B = memory[address];
@@ -272,7 +272,7 @@ inline uint8_t INR_mem(const uint8_t* registers, uint8_t* memory,
 {
     uint8_t h = registers[REG_H];
     uint8_t l = registers[REG_L];
-    uint8_t address = ADDRESS(h, l);
+    uint16_t address = ADDRESS(h, l);
 
     const uint8_t A = memory[address];
     const uint8_t B = 1;
@@ -290,7 +290,7 @@ inline uint8_t DCR_mem(const uint8_t* registers, uint8_t* memory,
 {
     uint8_t h = registers[REG_H];
     uint8_t l = registers[REG_L];
-    uint8_t address = ADDRESS(h, l);
+    uint16_t address = ADDRESS(h, l);
 
     const uint8_t A = memory[address];
     const uint8_t B = 1;
@@ -544,10 +544,23 @@ inline uint8_t STC(uint8_t* flags)
     return 4;
 }
 
-inline uint8_t JMP(const uint8_t addr_low, const uint8_t addr_high, uint16_t* PC)
+inline uint8_t JMP(const uint8_t addr_low, const uint8_t addr_high,
+                   uint16_t* PC)
 {
     (*PC) = ADDRESS(addr_high, addr_low);
     return 10;
+}
+
+inline uint8_t CALL(uint8_t* memory, const uint8_t addr_low,
+                   const uint8_t addr_high, uint16_t* PC, uint16_t* SP)
+{
+    memory[(*SP) - 1] = (uint8_t)( ((*PC) & 0xF0) >> 8 );
+    memory[(*SP) - 2] = (uint8_t)( (*PC) & 0x0F );
+    (*SP) -= 2;
+    uint16_t addr = ADDRESS(addr_high, addr_low);
+    (*PC) = addr;
+
+    return 17;
 }
 
 #endif // INSTRUCTIONS_H

@@ -173,6 +173,9 @@ void cpu_step()
         case 0b11000011: // Jump
             busy_cycles = JMP(memory[PC + 1], memory[PC + 2], &PC);
             break;
+        case 0b11001101: // Call
+            busy_cycles = CALL(memory, memory[PC + 1], memory[PC + 2], &PC, &SP);
+            break;
         default:
             // TODO: Handle unknown instruction
             break;
