@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-inline uint8_t get_mem_HL(const uint8_t* registers, const uint8_t* memory)
+static inline uint8_t get_mem_HL(const uint8_t* registers, const uint8_t* memory)
 {
     const uint8_t h = registers[REG_H];
     const uint8_t l = registers[REG_L];
@@ -13,7 +13,20 @@ inline uint8_t get_mem_HL(const uint8_t* registers, const uint8_t* memory)
     return memory[address];
 }
 
-inline uint8_t update_flags(const uint8_t result, const uint8_t A,
+static inline void write_low(uint16_t* dst, const uint8_t value)
+{
+    (*dst) &= 0xF0;
+    (*dst) |= value;
+}
+
+
+static inline void write_high(uint16_t* dst, const uint8_t value)
+{
+    (*dst) &= 0x0F;
+    (*dst) |= ((uint16_t)value << 8);
+}
+
+static inline uint8_t update_flags(const uint8_t result, const uint8_t A,
                             const uint8_t B, const bool addition,
                             uint8_t flags, const uint8_t mask)
 {
@@ -57,9 +70,9 @@ inline uint8_t update_flags(const uint8_t result, const uint8_t A,
     return flags;
 }
 
-// NOTE: Instructions return the number of cycles they take
+// NOTE: Instructions return the number of cycles they take to complete
 
-inline uint8_t MVI_mem(const uint8_t* registers, uint8_t* memory,
+static inline uint8_t MVI_mem(const uint8_t* registers, uint8_t* memory,
                        const uint8_t imm)
 {
     // TODO: Replace explicit calls with the get_mem_HL function (multiple
@@ -69,21 +82,21 @@ inline uint8_t MVI_mem(const uint8_t* registers, uint8_t* memory,
     return 10;
 }
 
-inline uint8_t LDA(uint8_t* registers, const uint8_t* memory,
+static inline uint8_t LDA(uint8_t* registers, const uint8_t* memory,
                const uint16_t address)
 {
     registers[REG_A] = memory[address];
     return 13;
 }
 
-inline uint8_t STA(const uint8_t* registers, uint8_t* memory,
+static inline uint8_t STA(const uint8_t* registers, uint8_t* memory,
                const uint16_t address)
 {
     memory[address] = registers[REG_A];
     return 13;
 }
 
-inline uint8_t LHLD(uint8_t* registers, const uint8_t* memory,
+static inline uint8_t LHLD(uint8_t* registers, const uint8_t* memory,
                 uint16_t const address)
 {
     registers[REG_L] = memory[address];
@@ -91,7 +104,7 @@ inline uint8_t LHLD(uint8_t* registers, const uint8_t* memory,
     return 16;
 }
 
-inline uint8_t SHLD(const uint8_t* registers, uint8_t* memory,
+static inline uint8_t SHLD(const uint8_t* registers, uint8_t* memory,
                 const uint16_t address)
 {
     memory[address] = registers[REG_L];
@@ -99,7 +112,7 @@ inline uint8_t SHLD(const uint8_t* registers, uint8_t* memory,
     return 16;
 }
 
-inline uint8_t XCHG(uint8_t* registers)
+static inline uint8_t XCHG(uint8_t* registers)
 {
     uint8_t aux;
     aux = registers[REG_H];
@@ -113,7 +126,7 @@ inline uint8_t XCHG(uint8_t* registers)
     return 4;
 }
 
-inline uint8_t ADD_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags)
+static inline uint8_t ADD_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags)
 {
     uint8_t h = registers[REG_H];
     uint8_t l = registers[REG_L];
@@ -128,7 +141,7 @@ inline uint8_t ADD_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags
     return 7;
 }
 
-inline uint8_t ADI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+static inline uint8_t ADI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     uint8_t A = registers[REG_A];
     uint8_t B = imm;
@@ -140,7 +153,7 @@ inline uint8_t ADI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t ADC_mem(uint8_t* registers, const uint8_t* memory,
+static inline uint8_t ADC_mem(uint8_t* registers, const uint8_t* memory,
                    uint8_t* flags)
 {
     uint8_t h = registers[REG_H];
@@ -168,7 +181,7 @@ inline uint8_t ADC_mem(uint8_t* registers, const uint8_t* memory,
     return 7;
 }
 
-inline uint8_t ACI(uint8_t* registers, uint8_t imm, uint8_t* flags)
+static inline uint8_t ACI(uint8_t* registers, uint8_t imm, uint8_t* flags)
 {
     uint8_t carry = GET_FLAG(*flags, CARRY_FLAG);
     uint8_t A = registers[REG_A];
@@ -191,7 +204,7 @@ inline uint8_t ACI(uint8_t* registers, uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t SUB_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags)
+static inline uint8_t SUB_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags)
 {
     uint8_t h = registers[REG_H];
     uint8_t l = registers[REG_L];
@@ -206,7 +219,7 @@ inline uint8_t SUB_mem(uint8_t* registers, const uint8_t* memory, uint8_t* flags
     return 7;
 }
 
-inline uint8_t SUI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+static inline uint8_t SUI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     uint8_t A = registers[REG_A];
     uint8_t B = imm;
@@ -218,7 +231,7 @@ inline uint8_t SUI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t SBB_mem(uint8_t* registers, const uint8_t* memory,
+static inline uint8_t SBB_mem(uint8_t* registers, const uint8_t* memory,
                    uint8_t* flags)
 {
     uint8_t h = registers[REG_H];
@@ -245,7 +258,7 @@ inline uint8_t SBB_mem(uint8_t* registers, const uint8_t* memory,
     return 7;
 }
 
-inline uint8_t SBI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+static inline uint8_t SBI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     uint8_t carry = GET_FLAG(*flags, CARRY_FLAG);
     uint8_t A = registers[REG_A];
@@ -267,7 +280,7 @@ inline uint8_t SBI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t INR_mem(const uint8_t* registers, uint8_t* memory,
+static inline uint8_t INR_mem(const uint8_t* registers, uint8_t* memory,
                        uint8_t* flags)
 {
     uint8_t h = registers[REG_H];
@@ -285,7 +298,7 @@ inline uint8_t INR_mem(const uint8_t* registers, uint8_t* memory,
     return 10;
 }
 
-inline uint8_t DCR_mem(const uint8_t* registers, uint8_t* memory,
+static inline uint8_t DCR_mem(const uint8_t* registers, uint8_t* memory,
                        uint8_t* flags)
 {
     uint8_t h = registers[REG_H];
@@ -303,7 +316,7 @@ inline uint8_t DCR_mem(const uint8_t* registers, uint8_t* memory,
     return 10;
 }
 
-inline uint8_t DDA(uint8_t* registers, uint8_t* flags)
+static inline uint8_t DDA(uint8_t* registers, uint8_t* flags)
 {
     // TODO: Not sure how the flags should be set here, double check/test!
 
@@ -344,7 +357,7 @@ inline uint8_t DDA(uint8_t* registers, uint8_t* flags)
     return 4;
 }
 
-inline uint8_t ANA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
+static inline uint8_t ANA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
 {
     const uint8_t A = registers[REG_A];
     const uint8_t B = get_mem_HL(registers, memory);
@@ -366,7 +379,7 @@ inline uint8_t ANA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t ANI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+static inline uint8_t ANI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     registers[REG_A] = registers[REG_A] & imm;
 
@@ -378,7 +391,7 @@ inline uint8_t ANI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t XRA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
+static inline uint8_t XRA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
 {
     const uint8_t A = registers[REG_A];
     const uint8_t B = get_mem_HL(registers, memory);
@@ -393,7 +406,7 @@ inline uint8_t XRA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t XRI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+static inline uint8_t XRI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     registers[REG_A] = registers[REG_A] ^ imm;
 
@@ -405,7 +418,7 @@ inline uint8_t XRI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t ORA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
+static inline uint8_t ORA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
 {
     const uint8_t A = registers[REG_A];
     const uint8_t B = get_mem_HL(registers, memory);
@@ -420,7 +433,7 @@ inline uint8_t ORA_mem(uint8_t* registers, uint8_t* memory, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t ORI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
+static inline uint8_t ORI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     registers[REG_A] = registers[REG_A] | imm;
 
@@ -432,7 +445,7 @@ inline uint8_t ORI(uint8_t* registers, const uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t CMP_mem(const uint8_t* registers, const uint8_t* memory,
+static inline uint8_t CMP_mem(const uint8_t* registers, const uint8_t* memory,
                        uint8_t* flags)
 {
     const uint8_t A = registers[REG_A];
@@ -444,7 +457,7 @@ inline uint8_t CMP_mem(const uint8_t* registers, const uint8_t* memory,
     return 7;
 }
 
-inline uint8_t CPI(const uint8_t* registers, const uint8_t imm, uint8_t* flags)
+static inline uint8_t CPI(const uint8_t* registers, const uint8_t imm, uint8_t* flags)
 {
     const uint8_t A = registers[REG_A];
     const uint8_t B = imm;
@@ -455,7 +468,7 @@ inline uint8_t CPI(const uint8_t* registers, const uint8_t imm, uint8_t* flags)
     return 7;
 }
 
-inline uint8_t RLC(uint8_t* registers, uint8_t* flags)
+static inline uint8_t RLC(uint8_t* registers, uint8_t* flags)
 {
     uint8_t msb = ((registers[REG_A] & 0x80) >> 7);
     registers[REG_A] <<= 1;
@@ -471,7 +484,7 @@ inline uint8_t RLC(uint8_t* registers, uint8_t* flags)
     return 4;
 }
 
-inline uint8_t RRC(uint8_t* registers, uint8_t* flags)
+static inline uint8_t RRC(uint8_t* registers, uint8_t* flags)
 {
     uint8_t lsb = (registers[REG_A] & 0x01);
     registers[REG_A] >>= 1;
@@ -485,7 +498,7 @@ inline uint8_t RRC(uint8_t* registers, uint8_t* flags)
     return 4;
 }
 
-inline uint8_t RAL(uint8_t* registers, uint8_t* flags)
+static inline uint8_t RAL(uint8_t* registers, uint8_t* flags)
 {
     uint8_t msb = ((registers[REG_A] & 0x80) >> 7);
     registers[REG_A] <<= 1;
@@ -507,7 +520,7 @@ inline uint8_t RAL(uint8_t* registers, uint8_t* flags)
 }
 
 
-inline uint8_t RAR(uint8_t* registers, uint8_t* flags)
+static inline uint8_t RAR(uint8_t* registers, uint8_t* flags)
 {
     uint8_t lsb = (registers[REG_A] & 0x01);
     registers[REG_A] >>= 1;
@@ -525,33 +538,33 @@ inline uint8_t RAR(uint8_t* registers, uint8_t* flags)
     return 4;
 }
 
-inline uint8_t CMA(uint8_t* registers)
+static inline uint8_t CMA(uint8_t* registers)
 {
     registers[REG_A] = (~registers[REG_A]);
     return 4;
 }
 
 
-inline uint8_t CMC(uint8_t* flags)
+static inline uint8_t CMC(uint8_t* flags)
 {
     (*flags) ^= CARRY_FLAG;
     return 4;
 }
 
-inline uint8_t STC(uint8_t* flags)
+static inline uint8_t STC(uint8_t* flags)
 {
     (*flags) = SET_FLAG(*flags, CARRY_FLAG);
     return 4;
 }
 
-inline uint8_t JMP(const uint8_t addr_low, const uint8_t addr_high,
+static inline uint8_t JMP(const uint8_t addr_low, const uint8_t addr_high,
                    uint16_t* PC)
 {
     (*PC) = ADDRESS(addr_high, addr_low);
     return 10;
 }
 
-inline uint8_t CALL(uint8_t* memory, const uint8_t addr_low,
+static inline uint8_t CALL(uint8_t* memory, const uint8_t addr_low,
                    const uint8_t addr_high, uint16_t* PC, uint16_t* SP)
 {
     memory[(*SP) - 1] = (uint8_t)( ((*PC) & 0xF0) >> 8 );
@@ -561,6 +574,28 @@ inline uint8_t CALL(uint8_t* memory, const uint8_t addr_low,
     (*PC) = addr;
 
     return 17;
+}
+
+static inline uint8_t RET(const uint8_t* memory, uint16_t* PC, uint16_t* SP)
+{
+    const uint8_t mem_low = memory[(*SP)];
+    const uint8_t mem_high = memory[(*SP) + 1];
+    (*SP) = (*SP) + 2;
+
+    write_low(PC, mem_low);
+    write_high(PC, mem_high);
+    return 10; 
+}
+
+static inline uint8_t PCHL(const uint8_t* registers, uint16_t* PC)
+{
+    const uint8_t reg_low = registers[REG_L];
+    const uint8_t reg_high = registers[REG_H];
+
+    write_high(PC, reg_high);
+    write_low(PC, reg_low);
+
+    return 5;
 }
 
 #endif // INSTRUCTIONS_H

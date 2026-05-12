@@ -176,6 +176,12 @@ void cpu_step()
         case 0b11001101: // Call
             busy_cycles = CALL(memory, memory[PC + 1], memory[PC + 2], &PC, &SP);
             break;
+        case 0b11001001: // Return
+            busy_cycles = RET(memory, &PC, &SP);
+            break;
+        case 0b11101001: // Jump H and L indirect
+            busy_cycles = PCHL(registers, &PC);
+            break;
         default:
             // TODO: Handle unknown instruction
             break;
