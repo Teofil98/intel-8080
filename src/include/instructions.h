@@ -598,4 +598,24 @@ static inline uint8_t PCHL(const uint8_t* registers, uint16_t* PC)
     return 5;
 }
 
+static inline uint8_t PUSH_PSW(const uint8_t* registers, uint8_t* memory, const uint8_t flags, uint16_t* SP)
+{
+    memory[(*SP) - 1] = registers[REG_A];
+    memory[(*SP) - 2] = flags;
+    (*SP) = (*SP) - 2;
+
+    return 11;
+}
+
+static inline uint8_t POP_PSW(uint8_t* registers, uint8_t* memory, uint8_t* flags, uint16_t* SP)
+{
+    registers[REG_A] = memory[(*SP) + 1];
+    (*flags) = memory[(*SP)];
+    // ensure bit 1 of flag is correct even if the wrong value is popped into flags
+    (*flags) |= (1 << 1);
+    (*SP) = (*SP) + 2;
+
+    return 10;
+}
+
 #endif // INSTRUCTIONS_H

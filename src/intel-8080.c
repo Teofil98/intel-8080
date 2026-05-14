@@ -182,6 +182,14 @@ void cpu_step()
         case 0b11101001: // Jump H and L indirect
             busy_cycles = PCHL(registers, &PC);
             break;
+        case 0b11110101: // Push processor status word
+            busy_cycles = PUSH_PSW(registers, memory, flags, &SP);
+            PC += 1;
+            break;
+        case 0b11110001:
+            busy_cycles = POP_PSW(registers, memory, &flags, &SP);
+            PC += 1;
+            break;
         default:
             // TODO: Handle unknown instruction
             break;
